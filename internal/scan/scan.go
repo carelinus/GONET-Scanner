@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"arping"
 	"encoding/binary"
 	"net"
 	"os"
@@ -9,10 +8,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/j-keck/arping"
 )
 
 func Isport(port string) bool {
-	var validator = regexp.MustCompile("^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$")
+	validator := regexp.MustCompile("^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$")
 	return validator.MatchString(port)
 }
 
@@ -34,7 +35,6 @@ func Get_ip(ip string) []string {
 			if ipv4 := ip.To4(); ipv4 != nil {
 				all_ip = append(all_ip, ipv4.String())
 			}
-
 		}
 		if err != nil {
 			ip = ""
@@ -52,7 +52,7 @@ func socket(ip string, port int) (socket string) {
 	return socket
 }
 
-func Tcp_scan(ip string, port int,timeout time.Duration) int {
+func Tcp_scan(ip string, port int, timeout time.Duration) int {
 	connection, err := net.DialTimeout("tcp", socket(ip, port), timeout)
 	if err != nil {
 		if strings.Contains(err.Error(), "too many open files") {
@@ -64,15 +64,15 @@ func Tcp_scan(ip string, port int,timeout time.Duration) int {
 
 	defer connection.Close()
 	return port
-
 }
+
 func Cdirgetter(cidr string) ([]string, error) {
 	var hosts []string
 	_, subnet, err := net.ParseCIDR(cidr)
-    if err != nil {
-        print("Please Input a valid CIDR in this format (192.168.1.1/24, 10.0.0.0/8)")
-        os.Exit(0)
-    }
+	if err != nil {
+		print("Please Input a valid CIDR in this format (192.168.1.1/24, 10.0.0.0/8)")
+		os.Exit(0)
+	}
 	mascara := binary.BigEndian.Uint32(subnet.Mask)
 	fAddr := binary.BigEndian.Uint32(subnet.IP)
 	lAddr := (fAddr & mascara) | (mascara ^ 0xffffffff)
@@ -84,6 +84,7 @@ func Cdirgetter(cidr string) ([]string, error) {
 	}
 	return hosts, err
 }
+
 func Arpscan_lan(ips string) (string, string) {
 	ip := net.ParseIP(ips)
 	arping.SetTimeout(500 * time.Millisecond)

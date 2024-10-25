@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
-	"ports"
-	"scan"
 	"strconv"
-	"time"
 	"strings"
+	"time"
+
+	"github.com/carelinus/GONET-Scanner/internal/ports"
+	"github.com/carelinus/GONET-Scanner/internal/scan"
 )
 
 const (
@@ -26,14 +27,14 @@ var (
 	hosts_online []string
 	notmatch     int
 	finish_port  int
-	timeouts	 int
+	timeouts     int
 	start_port   int
 	err          error
 	scansubnet   bool
 	mk_ports     bool
-	
-	ports_list   map[int]string
-    mac string
+
+	ports_list map[int]string
+	mac        string
 )
 
 func getService(ports map[int]string, port int) string {
@@ -55,6 +56,7 @@ func port_parser(start_port int, finish_port int) (int, int) {
 
 	return start_port, finish_port
 }
+
 func remove(s []string, index int) []string {
 	return append(s[:index], s[index+1:]...)
 }
@@ -80,14 +82,15 @@ func scan_type(args []string) (int, int) {
 	}
 	return start_port, finish_port
 }
+
 func isnotempty(s string) bool {
 	return len(s) > 0
 }
 
 func man_menu() {
-    fmt.Print("[ARGUMENTS]\n\n")
-    fmt.Print("-ar CIDR: ARP Discovery\n-ar CIDR -s: Scan ports in all hosts discovered\n-ap: Scan to 65535 Ports\n-pr MINPORT MAXPORT: Define Port Range to Scan\n-1000: Scan Top 1000 ports (like nmap)\n-t: Set Timeout (in milliseconds)\n\n")
-    fmt.Print("[EXAMPLES]\n\n")
+	fmt.Print("[ARGUMENTS]\n\n")
+	fmt.Print("-ar CIDR: ARP Discovery\n-ar CIDR -s: Scan ports in all hosts discovered\n-ap: Scan to 65535 Ports\n-pr MINPORT MAXPORT: Define Port Range to Scan\n-1000: Scan Top 1000 ports (like nmap)\n-t: Set Timeout (in milliseconds)\n\n")
+	fmt.Print("[EXAMPLES]\n\n")
 	fmt.Print("go run scannerport.go -ap <IP>: Allports TCP Scan\n")
 	fmt.Print("go run scannerport.go <IP> Default Scan 0-1024 ports\n")
 	fmt.Print("go run scannerport.go  -ar 192.168.0.1/24 <IP>: ARP Ping Scan ALL local Subnet\n")
@@ -99,12 +102,11 @@ func man_menu() {
 	fmt.Print("Example:", " go run scannerport.go google.com -1000 (Will resolve google.com + Will scan top 1000 ports)")
 	fmt.Print("Example: go run scannerport.go 192.168.0.1 -pr 100 3000 (will scan every port in these range you must put first minor port)")
 	os.Exit(0)
-
 }
 
 func Args(arguments []string) (timeout int, mkports bool, scansubnet bool, cidr string, args []string, ip string) {
-	timeout = 100 //Default Timeout
-	var parameters = []string{
+	timeout = 100 // Default Timeout
+	parameters := []string{
 		"-ar",
 		"-ap",
 		"-pr",
@@ -127,11 +129,10 @@ func Args(arguments []string) (timeout int, mkports bool, scansubnet bool, cidr 
 					cidr = arguments[i+1]
 					if arguments[i+2] == "-s" {
 						scansubnet = true
-					} 
+					}
 					remove(arguments, i+1)
 				} else if arguments[i] == "-1000" {
 					mk_ports = true
-					
 				}
 				if isNumeric(arguments[i]) {
 					notmatch = notmatch - 1
@@ -140,10 +141,10 @@ func Args(arguments []string) (timeout int, mkports bool, scansubnet bool, cidr 
 			if notmatch == len(parameters) {
 				man_menu()
 			}
-			
+
 		}
 		if arguments[i] == "-t" {
-			timeout, err = strconv.Atoi(arguments[i+1]) 
+			timeout, err = strconv.Atoi(arguments[i+1])
 			if err != nil {
 				man_menu()
 			}
@@ -152,8 +153,9 @@ func Args(arguments []string) (timeout int, mkports bool, scansubnet bool, cidr 
 	if len(ips) == 0 && !isnotempty(cidr) {
 		man_menu()
 	}
-	return timeout ,mk_ports, scansubnet, cidr, arguments, ip
+	return timeout, mk_ports, scansubnet, cidr, arguments, ip
 }
+
 func printer(mac string, host string, port int, service string) {
 	if !isnotempty(service) {
 		service = "Not Found"
@@ -161,7 +163,6 @@ func printer(mac string, host string, port int, service string) {
 	if port == 0 {
 		print("")
 	} else if port != MAXPORT+1 {
-
 		print(fmt.Sprintf("%d\tOpen\t"+service+"\n", port))
 	} else {
 		if strings.Contains(host, "Running") {
@@ -170,14 +171,12 @@ func printer(mac string, host string, port int, service string) {
 		} else {
 			print(fmt.Sprintf("%s\tOnline\t"+mac+"\n", host))
 		}
-
 	}
 }
 
 func main() {
-
 	ports_list = ports.Ports()
-	timeouts ,mk_ports, scansubnet, cidr, arguments, ip = Args(os.Args)
+	timeouts, mk_ports, scansubnet, cidr, arguments, ip = Args(os.Args)
 	timeout := time.Duration(timeouts)
 	if isnotempty(cidr) {
 		hosts, err := scan.Cdirgetter(cidr)
@@ -199,32 +198,30 @@ func main() {
 
 				fmt.Printf("PORT\tSTATUS\tService\n")
 				for j := start_port; j < finish_port; j++ {
-						printer("", hosts_online[i], scan.Tcp_scan(hosts_online[i], j, timeout * time.Millisecond), getService(ports_list, j))
+					printer("", hosts_online[i], scan.Tcp_scan(hosts_online[i], j, timeout*time.Millisecond), getService(ports_list, j))
 				}
 			}
 		}
 
 	} else if mk_ports {
 		for i := range ips {
-			ports_1000 := ports.Top1000ports() 
+			ports_1000 := ports.Top1000ports()
 			ip = ips[i]
 			fmt.Printf("Host to Scan: " + ip + "\n")
 			fmt.Printf("PORT" + "\t" + "STATUS " + "\t" + "Service" + "\n")
 			for j := range ports_1000 {
-				
-					printer("", ip, scan.Tcp_scan(ip, ports_1000[j], timeout * time.Millisecond), getService(ports_list, ports_1000[j]))
-
-}
-} 
-} else {
+				printer("", ip, scan.Tcp_scan(ip, ports_1000[j], timeout*time.Millisecond), getService(ports_list, ports_1000[j]))
+			}
+		}
+	} else {
 		start_port, finish_port = scan_type(arguments)
 		for i := range ips {
 			ip = ips[i]
 			fmt.Printf("Host to Scan: " + ip + "\n")
 			fmt.Printf("PORT" + "\t" + "STATUS " + "\t" + "Service" + "\n")
 			for j := start_port; j < finish_port; j++ {
-				printer("", ip, scan.Tcp_scan(ip, j, timeout * time.Millisecond), getService(ports_list, j))	
+				printer("", ip, scan.Tcp_scan(ip, j, timeout*time.Millisecond), getService(ports_list, j))
 			}
 		}
-	} 
+	}
 }
